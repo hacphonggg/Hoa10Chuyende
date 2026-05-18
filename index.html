@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô Phỏng Tương Tác: Tam Giác Cháy</title>
+    <!-- Sử dụng Tailwind CSS cho giao diện -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Nền xanh đen tối */
+            color: #f8fafc;
+            overflow: hidden;
+        }
+
+        /* Khung hiển thị chính */
+        .stage-container {
+            position: relative;
+            width: 300px;
+            height: 350px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        /* --- HIỆU ỨNG CHẤT CHÁY (GỖ) --- */
+        .wood-container {
+            position: absolute;
+            bottom: 20px;
+            width: 150px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            z-index: 10;
+        }
+        .wood-container.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- HIỆU ỨNG NGUỒN NHIỆT (Tia lửa liti) --- */
+        .heat-glow {
+            position: absolute;
+            bottom: 0px;
+            width: 200px;
+            height: 100px;
+            background: radial-gradient(ellipse at center, rgba(239, 68, 68, 0.6) 0%, rgba(0,0,0,0) 70%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            animation: pulse-heat 1.5s infinite alternate;
+            z-index: 5;
+        }
+        .heat-glow.active {
+            opacity: 1;
+        }
+        @keyframes pulse-heat {
+            0% { transform: scale(0.9); opacity: 0.6; }
+            100% { transform: scale(1.1); opacity: 0.9; }
+        }
+
+        /* --- HIỆU ỨNG OXYGEN (Khí O2 lơ lửng) --- */
+        .oxygen-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 20;
+        }
+        .oxygen-particles.active {
+            opacity: 1;
+        }
+        .o2-text {
+            position: absolute;
+            color: #38bdf8; /* Xanh nhạt */
+            font-weight: bold;
+            font-size: 1.2rem;
+            animation: float-up 3s infinite ease-in-out;
+            opacity: 0.8;
+        }
+        .o2-1 { bottom: 50px; left: 20px; animation-delay: 0s; }
+        .o2-2 { bottom: 80px; right: 30px; animation-delay: 1s; }
+        .o2-3 { bottom: 120px; left: 60px; animation-delay: 2s; font-size: 1.5rem; }
+        .o2-4 { bottom: 60px; right: 80px; animation-delay: 0.5s; }
+
+        @keyframes float-up {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(-150px) translateX(20px); opacity: 0; }
+        }
+
+        /* --- HIỆU ỨNG SỰ CHÁY (Ngọn lửa đa tầng) --- */
+        .fire-container {
+            position: absolute;
+            bottom: 50px;
+            width: 100px;
+            height: 150px;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 15;
+            display: flex;
+            justify-content: center;
+        }
+        .fire-container.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .flame {
+            position: absolute;
+            bottom: 0;
+            border-radius: 50% 0 50% 50%;
+            transform: rotate(-45deg);
+            animation: flicker 0.5s infinite alternate;
+        }
+        /* Lớp lửa ngoài (Đỏ/Cam) */
+        .flame-red {
+            width: 100px;
+            height: 100px;
+            background: #ea580c; /* Orange 600 */
+            box-shadow: 0 0 20px #ea580c;
+            animation-delay: 0.1s;
+        }
+        /* Lớp lửa giữa (Cam vàng) */
+        .flame-orange {
+            width: 70px;
+            height: 70px;
+            background: #f59e0b; /* Amber 500 */
+            bottom: 10px;
+            left: 15px;
+            animation-delay: 0.2s;
+        }
+        /* Lớp lửa trong lõi (Vàng chanh) */
+        .flame-yellow {
+            width: 40px;
+            height: 40px;
+            background: #fef08a; /* Yellow 200 */
+            bottom: 15px;
+            left: 30px;
+            animation-delay: 0.3s;
+        }
+
+        @keyframes flicker {
+            0% { transform: rotate(-45deg) scale(0.9); }
+            100% { transform: rotate(-45deg) scale(1.05); }
+        }
+
+        /* CSS cho Nút bấm */
+        .btn-element {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0.4; /* Trạng thái mặc định (Tắt) là mờ và thu nhỏ */
+            transform: scale(0.95);
+            filter: grayscale(100%);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+        }
+        .btn-element:hover {
+            opacity: 0.7;
+            filter: grayscale(50%);
+        }
+        .btn-element:active {
+            transform: scale(0.92);
+        }
+        
+        /* Trạng thái Active của Nút (Bật) */
+        .btn-element.active {
+            opacity: 1;
+            transform: scale(1);
+            filter: grayscale(0%);
+        }
+        
+        /* Màu sắc phát sáng riêng cho từng nút khi Active */
+        #btn-fuel.active { background-color: rgba(139, 69, 19, 0.3); border-color: #f59e0b; box-shadow: 0 0 25px rgba(245, 158, 11, 0.6); }
+        #btn-oxygen.active { background-color: rgba(2, 132, 199, 0.3); border-color: #38bdf8; box-shadow: 0 0 25px rgba(56, 189, 248, 0.6); }
+        #btn-heat.active { background-color: rgba(220, 38, 38, 0.3); border-color: #f87171; box-shadow: 0 0 25px rgba(248, 113, 113, 0.6); }
+
+        /* --- CSS CHO CÁC LOẠI NHIÊN LIỆU PHỤ --- */
+        .fuel-type-btn.active-sub {
+            background-color: #ea580c !important; /* Cam đậm */
+            border-color: #f97316 !important;
+            color: white !important;
+        }
+        
+        /* Hiệu ứng Lửa màu Xanh (dành riêng cho Gas) */
+        .fire-container.gas-fire .flame-red { background: #0284c7; box-shadow: 0 0 20px #0284c7; }
+        .fire-container.gas-fire .flame-orange { background: #38bdf8; }
+        .fire-container.gas-fire .flame-yellow { background: #bae6fd; }
+
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-4 sm:p-8">
+
+    <header class="text-center w-full max-w-2xl mt-4">
+        <!-- Thêm py-2 và leading-tight để dấu câu tiếng Việt không bị cắt mất -->
+        <h1 class="text-3xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600 mb-2 py-2 leading-tight">
+            Điều Kiện Sự Cháy
+        </h1>
+        <p class="text-gray-400 text-sm sm:text-base">Mô phỏng tương tác: Hãy kích hoạt các yếu tố bên dưới để tìm hiểu tam giác cháy.</p>
+    </header>
+
+    <main class="flex-grow flex flex-col items-center justify-center w-full">
+        <div class="bg-gray-800/50 rounded-2xl border border-gray-700 p-8 w-full max-w-lg shadow-2xl relative">
+            
+            <!-- Vùng hiển thị thông báo trạng thái -->
+            <div id="status-panel" class="absolute top-4 left-0 w-full text-center h-12">
+                <p id="status-text" class="text-lg font-semibold text-gray-300 transition-colors duration-300">
+                    Khu vực thực nghiệm đang trống.
+                </p>
+            </div>
+
+            <!-- Sân khấu chính -->
+            <div class="stage-container mt-8 border-b-2 border-gray-600">
+                
+                <!-- 1. Hiệu ứng Nguồn Nhiệt -->
+                <div id="visual-heat" class="heat-glow"></div>
+
+                <!-- 2. Hiệu ứng Chất cháy (Đa dạng nhiên liệu) -->
+                <div id="visual-fuel" class="wood-container">
+                    <!-- Gỗ -->
+                    <div id="fuel-wood" class="fuel-item w-full h-full">
+                        <svg viewBox="0 0 100 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 30 L80 10 C85 8, 90 12, 88 18 L20 40 C15 42, 10 38, 10 30 Z" fill="#5c4033" stroke="#3e2723" stroke-width="2"/>
+                            <path d="M15 10 L85 30 C90 32, 88 38, 82 40 L12 20 C6 18, 10 12, 15 10 Z" fill="#6d4c41" stroke="#3e2723" stroke-width="2"/>
+                            <path d="M5 25 L95 25 C100 25, 100 35, 95 35 L5 35 C0 35, 0 25, 5 25 Z" fill="#8d6e63" stroke="#3e2723" stroke-width="2"/>
+                            <line x1="20" y1="28" x2="40" y2="28" stroke="#3e2723" stroke-width="1"/>
+                            <line x1="60" y1="32" x2="80" y2="32" stroke="#3e2723" stroke-width="1"/>
+                        </svg>
+                    </div>
+                    <!-- Khí Gas (Bếp gas) -->
+                    <div id="fuel-gas" class="fuel-item w-full h-full hidden">
+                        <svg viewBox="0 0 100 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Bệ bếp -->
+                            <rect x="25" y="35" width="50" height="15" fill="#4b5563" rx="2"/>
+                            <path d="M30 35 L40 20 L60 20 L70 35 Z" fill="#9ca3af"/>
+                            <!-- Đầu đốt -->
+                            <circle cx="50" cy="25" r="4" fill="#1f2937"/>
+                            <circle cx="38" cy="27" r="2" fill="#1f2937"/>
+                            <circle cx="62" cy="27" r="2" fill="#1f2937"/>
+                        </svg>
+                    </div>
+                    <!-- Xăng (Thùng phi) -->
+                    <div id="fuel-petrol" class="fuel-item w-full h-full hidden flex justify-center items-end">
+                        <svg width="90" height="120" viewBox="0 0 60 80" fill="none" xmlns="http://www.w3.org/2000/svg" class="mb-2">
+                            <rect x="10" y="10" width="40" height="60" fill="#dc2626" rx="4" stroke="#991b1b" stroke-width="3"/>
+                            <rect x="10" y="25" width="40" height="6" fill="#991b1b"/>
+                            <rect x="10" y="50" width="40" height="6" fill="#991b1b"/>
+                            <text x="30" y="42" fill="white" font-size="12" font-family="sans-serif" font-weight="bold" text-anchor="middle">XĂNG</text>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- 3. Hiệu ứng Oxygen -->
+                <div id="visual-oxygen" class="oxygen-particles">
+                    <span class="o2-text o2-1">O₂</span>
+                    <span class="o2-text o2-2">O₂</span>
+                    <span class="o2-text o2-3">O₂</span>
+                    <span class="o2-text o2-4">O₂</span>
+                </div>
+
+                <!-- 4. Hiệu ứng Ngọn lửa bùng phát -->
+                <div id="visual-fire" class="fire-container">
+                    <div class="flame flame-red"></div>
+                    <div class="flame flame-orange"></div>
+                    <div class="flame flame-yellow"></div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <footer class="w-full max-w-3xl mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 px-4">
+            
+            <!-- Cột Chất cháy (Gồm nút chính và nút chọn loại) -->
+            <div class="flex flex-col gap-2">
+                <!-- Nút Chất cháy (Chính) -->
+                <button id="btn-fuel" onclick="toggleElement('fuel')" 
+                    class="btn-element flex-grow flex flex-col items-center justify-center p-4 rounded-xl border-2 border-gray-600 bg-gray-800 text-gray-300">
+                    <svg class="w-10 h-10 mb-2 text-orange-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                    <span class="font-bold text-lg uppercase">Chất Cháy</span>
+                    <span id="fuel-label" class="text-xs mt-1 opacity-70 text-orange-300">(Gỗ)</span>
+                </button>
+                
+                <!-- Hàng nút chọn loại nhiên liệu -->
+                <div class="grid grid-cols-3 gap-1">
+                    <button id="btn-type-wood" onclick="selectFuel('wood')" class="fuel-type-btn active-sub py-1.5 rounded-md bg-gray-700 text-[12px] font-bold border border-gray-600 text-gray-300 hover:bg-gray-600 transition-colors">Gỗ</button>
+                    <button id="btn-type-gas" onclick="selectFuel('gas')" class="fuel-type-btn py-1.5 rounded-md bg-gray-700 text-[12px] font-bold border border-gray-600 text-gray-300 hover:bg-gray-600 transition-colors">Gas</button>
+                    <button id="btn-type-petrol" onclick="selectFuel('petrol')" class="fuel-type-btn py-1.5 rounded-md bg-gray-700 text-[12px] font-bold border border-gray-600 text-gray-300 hover:bg-gray-600 transition-colors">Xăng</button>
+                </div>
+            </div>
+
+            <!-- Nút Oxygen -->
+            <button id="btn-oxygen" onclick="toggleElement('oxygen')" 
+                class="btn-element flex flex-col items-center justify-center p-4 rounded-xl border-2 border-gray-600 bg-gray-800 text-gray-300">
+                <span class="text-3xl mb-2">💨</span>
+                <span class="font-bold text-lg uppercase">Chất Oxi Hóa</span>
+                <span class="text-xs mt-1 opacity-70">(Oxygen trong KK)</span>
+            </button>
+
+            <!-- Nút Nguồn Nhiệt -->
+            <button id="btn-heat" onclick="toggleElement('heat')" 
+                class="btn-element flex flex-col items-center justify-center p-4 rounded-xl border-2 border-gray-600 bg-gray-800 text-gray-300">
+                <span class="text-3xl mb-2">⚡</span>
+                <span class="font-bold text-lg uppercase">Nguồn Nhiệt</span>
+                <span class="text-xs mt-1 opacity-70">(Tia lửa, ma sát...)</span>
+            </button>
+
+        </div>
+    </footer>
+
+    <script>
+        // Lưu trữ trạng thái của 3 yếu tố
+        const states = {
+            fuel: false,
+            oxygen: false,
+            heat: false,
+            fuelType: 'wood' // Mặc định là gỗ
+        };
+
+        // Hàm xử lý khi chọn loại nhiên liệu
+        function selectFuel(type) {
+            states.fuelType = type;
+
+            // 1. Cập nhật giao diện nút chọn nhỏ
+            document.querySelectorAll('.fuel-type-btn').forEach(btn => {
+                btn.classList.remove('active-sub');
+            });
+            document.getElementById(`btn-type-${type}`).classList.add('active-sub');
+
+            // 2. Cập nhật nhãn phụ trên nút chính
+            const labels = { wood: '(Gỗ)', gas: '(Khí Gas)', petrol: '(Xăng lỏng)' };
+            document.getElementById('fuel-label').innerText = labels[type];
+
+            // 3. Ẩn/Hiện hình ảnh nhiên liệu trên sân khấu
+            document.getElementById('fuel-wood').classList.add('hidden');
+            document.getElementById('fuel-gas').classList.add('hidden');
+            document.getElementById('fuel-petrol').classList.add('hidden');
+            document.getElementById(`fuel-${type}`).classList.remove('hidden');
+
+            // 4. Đổi màu lửa thành Xanh nếu là Gas (Chi tiết Hóa học)
+            const fire = document.getElementById('visual-fire');
+            if (type === 'gas') {
+                fire.classList.add('gas-fire');
+            } else {
+                fire.classList.remove('gas-fire');
+            }
+
+            // 5. Nếu click chọn nhiên liệu mà nút Chất cháy đang Tắt, thì tự động Bật lên
+            if (!states.fuel) {
+                toggleElement('fuel');
+            } else {
+                evaluateTriangle(); // Cập nhật lại text trạng thái
+            }
+        }
+
+        // Hàm được gọi khi click vào các nút chính
+        function toggleElement(type) {
+            // Đảo ngược trạng thái hiện tại (bật -> tắt, tắt -> bật)
+            states[type] = !states[type];
+
+            // 1. Cập nhật giao diện Nút bấm
+            const btn = document.getElementById(`btn-${type}`);
+            if (states[type]) {
+                btn.classList.add('active');
+                btn.classList.remove('text-gray-300');
+                btn.classList.add('text-white');
+            } else {
+                btn.classList.remove('active');
+                btn.classList.add('text-gray-300');
+                btn.classList.remove('text-white');
+            }
+
+            // 2. Cập nhật hiệu ứng đồ họa trên Sân khấu
+            const visual = document.getElementById(`visual-${type}`);
+            if (states[type]) {
+                visual.classList.add('active');
+            } else {
+                visual.classList.remove('active');
+            }
+
+            // 3. Kiểm tra điều kiện cháy và cập nhật câu dẫn
+            evaluateTriangle();
+        }
+
+        // Hàm kiểm tra xem đã đủ 3 điều kiện chưa
+        function evaluateTriangle() {
+            const fire = document.getElementById('visual-fire');
+            const statusText = document.getElementById('status-text');
+            const statusPanel = document.getElementById('status-panel');
+            
+            // Đếm số lượng yếu tố đã được bật
+            let activeCount = 0;
+            if(states.fuel) activeCount++;
+            if(states.oxygen) activeCount++;
+            if(states.heat) activeCount++;
+
+            // Thay đổi text dựa trên số lượng yếu tố
+            if (activeCount === 0) {
+                statusText.innerText = "Khu vực thực nghiệm đang trống.";
+                statusText.className = "text-lg font-semibold text-gray-400";
+                
+            } else if (activeCount === 1 || activeCount === 2) {
+                let text = "Đã cung cấp: ";
+                let items = [];
+                
+                // Cập nhật tên theo loại nhiên liệu thực tế
+                let fuelName = "Chất cháy";
+                if(states.fuelType === 'wood') fuelName = "Gỗ";
+                if(states.fuelType === 'gas') fuelName = "Khí Gas";
+                if(states.fuelType === 'petrol') fuelName = "Xăng";
+
+                if(states.fuel) items.push(fuelName);
+                if(states.oxygen) items.push("Oxygen");
+                if(states.heat) items.push("Nguồn nhiệt");
+                
+                text += items.join(" + ") + ". Chưa đủ điều kiện!";
+                statusText.innerText = text;
+                statusText.className = "text-lg font-semibold text-yellow-400";
+            }
+
+            // KIỂM TRA ĐIỀU KIỆN QUYẾT ĐỊNH
+            if (states.fuel && states.oxygen && states.heat) {
+                // Đủ 3 yếu tố -> Kích hoạt Lửa
+                fire.classList.add('active');
+                
+                // Cập nhật thông báo thành công
+                statusText.innerText = "🔥 TAM GIÁC CHÁY HOÀN THIỆN! SỰ CHÁY XẢY RA! 🔥";
+                statusText.className = "text-xl font-bold text-red-500 animate-pulse uppercase";
+                
+            } else {
+                // Thiếu yếu tố -> Tắt Lửa
+                fire.classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>
